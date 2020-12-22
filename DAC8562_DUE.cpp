@@ -7,10 +7,11 @@
 */
 
 #include "DAC8562_DUE.h"
+#include "DigitalWriteFast.h"
 
 DAC8562::DAC8562()
 {
-  _cs_pin = 10;
+  _cs_pin = SS;
   _vref=3.3383; //My Board using vref 3.3V
 };
 
@@ -28,28 +29,39 @@ DAC8562::DAC8562( uint8_t cs_pin, float vref)
 
 void DAC8562::begin()
 {
+  #ifdef _VARIANT_ARDUINO_DUE_X_
   SPI.begin(_cs_pin);
   SPI.setDataMode(_cs_pin,SPI_MODE1);
   SPI.setBitOrder(_cs_pin,MSBFIRST);
-  initialize();
+  #else
   /* !Chip select (low to enable) */
-  //pinMode(_cs_pin, OUTPUT);
-  //digitalWrite(_cs_pin,  1);
+  pinMode(_cs_pin, OUTPUT);
+  digitalWriteFast(_cs_pin, HIGH);
+  SPI.begin();
+  SPI.setDataMode(SPI_MODE1);
+  SPI.setBitOrder(MSBFIRST);
+  #endif
+  initialize();
 };
 
 
 void DAC8562::DAC_WR_REG(uint8_t cmd_byte, uint16_t data_byte) {
-  //digitalWrite(_cs_pin, 0);
+  #ifdef _VARIANT_ARDUINO_DUE_X_
   SPI.transfer(_cs_pin,cmd_byte,SPI_CONTINUE);
   SPI.transfer16(_cs_pin,data_byte);
-  //digitalWrite(_cs_pin, 1);
+  #else
+  digitalWriteFast(_cs_pin, LOW);
+  SPI.transfer(cmd_byte);
+  SPI.transfer16(data_byte);
+  digitalWriteFast(_cs_pin, HIGH);
+  #endif
 };
 
 
 void DAC8562::outPutValue(uint8_t cmd_byte,uint16_t input) {
   byte inputMid = (input>>8)&0xFF;
   byte inputLast = input&0xFF;
-  unsigned int  t= (input>>8)&0xFF;
+  //unsigned int  t= (input>>8)&0xFF;
   writeValue(cmd_byte, (inputLast),(inputMid));
 };
 
@@ -67,12 +79,17 @@ void DAC8562::writeB(float input) {
 };
 
 void DAC8562::writeValue(uint8_t cmd_byte, uint8_t mid, uint8_t last) {
-  //digitalWrite(_cs_pin, 0);
+  #ifdef _VARIANT_ARDUINO_DUE_X_
   SPI.transfer(_cs_pin,cmd_byte,SPI_CONTINUE);
   SPI.transfer(_cs_pin,last,SPI_CONTINUE);
   SPI.transfer(_cs_pin,mid);
-  
-  //digitalWrite(_cs_pin, 1);
+  #else
+  digitalWriteFast(_cs_pin, LOW);
+  SPI.transfer(cmd_byte);
+  SPI.transfer(last);
+  SPI.transfer(mid);
+  digitalWriteFast(_cs_pin, HIGH);
+  #endif
 };
 
 void DAC8562::initialize() {

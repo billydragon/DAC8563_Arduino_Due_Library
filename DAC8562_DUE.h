@@ -25,7 +25,7 @@
 
 #include "Arduino.h"
 #include <SPI.h>
-
+#define SS                        10    //DEFAULT SS pin for SPI
 
 #define CMD_SETA_UPDATEA          0x18  // 
 #define CMD_SETB_UPDATEB          0x19  // 
